@@ -24,7 +24,7 @@ Workflow diagram:
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/erenerogullari/invoice-extractor
 cd invoice-extractor
 ```
 
@@ -53,23 +53,32 @@ GOOGLE_API_KEY=your_api_key_here
 
 ## Running Locally
 
-From the project root, run:
+From the project root, run with the path to your invoice PDF:
+
+```bash
+python main.py --pdf-path path/to/your/invoice.pdf
+```
+
+Short form:
+
+```bash
+python main.py -p path/to/your/invoice.pdf
+```
+
+If you omit the path, the default sample invoice is used:
 
 ```bash
 python main.py
+# Uses data/invoice-correct.pdf
 ```
 
-This processes the sample invoice at `data/invoice-correct.pdf` and prints the extracted data plus the database contents.
-
-To process a different PDF:
+You can also call the extractor from Python with the PDF path as a keyword argument:
 
 ```python
 from main import run_invoice_extraction
 
-run_invoice_extraction("path/to/your/invoice.pdf")
+run_invoice_extraction(pdf_path="path/to/your/invoice.pdf")
 ```
-
-Or modify the `sample_invoice_path` in `main.py` and run again.
 
 ## Project Structure
 

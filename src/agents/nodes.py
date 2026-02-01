@@ -1,5 +1,6 @@
 from src.agents.state import AgentState
 from src.chains.extractor import structured_llm
+from src.chains.prompts import get_extraction_instruction
 from langchain.messages import HumanMessage
 from src.schema.invoice import Invoice, invoice_to_df
 from typing import TypedDict, List, Dict, Any, Optional
@@ -11,19 +12,20 @@ log = logging.getLogger(__name__)
 
 def extract_from_pdf(state: AgentState) -> Dict[str, Any]:
     """
-    Extracts invoice data from a PDF file.
+    Extracts invoice data from a PDF file using Gemini's multimodality.
     """
     with open(state["pdf_path"], "rb") as file:
         pdf_data = base64.b64encode(file.read()).decode("utf-8")
-    
+
+    instruction_text = get_extraction_instruction(errors=state.get("errors") or [])
     message = HumanMessage(
         content=[
-            {"type": "text", "text": "Extract all structured data from this invoice PDF. Accuracy is critical."},
+            {"type": "text", "text": instruction_text},
             {
                 "type": "media",
                 "mime_type": "application/pdf",
-                "data": pdf_data
-            }
+                "data": pdf_data,
+            },
         ]
     )
     invoice_data = structured_llm.invoke([message])
@@ -64,6 +66,7 @@ def validate_invoice_data(state: AgentState) -> Dict[str, Any]:
             f"Math mismatch: Line items + tax = {calculated_total}, "
             f"but invoice says {actual_total}"
         )
+        log.info(f"Math mismatch: Line items + tax = {calculated_total}, but invoice says {actual_total}")
 
     log.debug(f"Errors: {errors}")
     
@@ -83,8 +86,10 @@ def should_continue(state: AgentState) -> str:
         return "end"
     elif state["iteration_count"] > 3:
         # Stop after 3 tries to prevent infinite loops (and high API costs!)
+        log.info(f"Please review the invoice data and correct the errors.")
         return "human_review"
     else:
+        log.info(f"Retrying extraction with error feedback.")
         return "re-extract"
 
 
